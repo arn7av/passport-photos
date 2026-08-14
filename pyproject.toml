@@ -1,0 +1,111 @@
+[project]
+name = "passport-photos"
+version = "0.1.0"
+description = "Passport photo processing: face detection, cropping, background removal and tiling"
+readme = "README.md"
+requires-python = ">=3.11,<3.14"
+dependencies = [
+    "opencv-python>=4.10,<5",
+    "pillow>=11",
+    "numpy>=2.0",
+]
+
+[project.optional-dependencies]
+# Heavy optional extras — install only if you need them and your Python version supports them.
+# - DeepFace/TensorFlow is supported on the project's Python 3.11-3.13 range.
+# - SAM: uv sync --extra sam  (pulls torch + segment-anything from git)
+# - BEN2: uv sync --extra ben2  (ONNX Runtime; use the manually supplied ONNX export)
+# - BiRefNet_dynamic: uv sync --extra birefnet  (PyTorch + local Transformers snapshot)
+# - YuNet: no extra needed (just opencv + onnx file), but model must be provided via --yunet-model
+# - RetinaFace/MTCNN: provided by the deepface extra. RetinaFace weights must be
+#   supplied manually; MTCNN weights are bundled in its package.
+rembg = [
+    "rembg>=2.0.78",
+    "onnxruntime>=1.16",
+]
+sam = [
+    "torch>=2.2",
+    "torchvision>=0.17",
+    "segment-anything @ git+https://github.com/facebookresearch/segment-anything.git@dca509fe793f601edb92606367a655c15ac00fdf",
+]
+ben2 = [
+    "onnxruntime>=1.16",
+]
+birefnet = [
+    "torch>=2.5.1",
+    "torchvision>=0.20",
+    "transformers>=4.45",
+    "timm>=1.0.10",
+    "kornia>=0.7",
+    "einops>=0.6",
+]
+deepface = [
+    "deepface>=0.0.90",
+    "tensorflow>=2.12",
+    "tf-keras>=2.12",
+]
+all = [
+    "rembg>=2.0.78",
+    "onnxruntime>=1.16",
+    "torch>=2.5.1",
+    "torchvision>=0.20",
+    "segment-anything @ git+https://github.com/facebookresearch/segment-anything.git@dca509fe793f601edb92606367a655c15ac00fdf",
+    "transformers>=4.45",
+    "timm>=1.0.10",
+    "kornia>=0.7",
+    "einops>=0.6",
+    "deepface>=0.0.90",
+    "tensorflow>=2.12",
+    "tf-keras>=2.12",
+]
+dev = [
+    "ruff>=0.8",
+]
+
+[tool.passport-photos]
+# Model paths are intentionally not stored in project defaults. Supply them through a
+# user config or explicit CLI flags; the application never downloads model weights.
+rembg_model = "birefnet-portrait"
+face_backend = "auto"        # auto | yunet | haar | deepface | retinaface | mtcnn
+background_backend = "none"  # none | auto | sam | rembg | ben2 | birefnet
+# Output / tiling defaults
+photo_width = 2              # inches, single photo
+photo_height = 2
+paper_width = 10             # inches, tiled sheet
+paper_height = 8
+dpi = 400                    # print DPI
+output_format = "auto"       # auto | png | jpeg
+jpeg_quality = 95
+
+[project.scripts]
+passport-photos = "process_image:main_cli"
+
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+only-include = ["process_image.py", "README.md"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "process_image.py",
+    "setup_model_cache.sh",
+    "bench.sh",
+    "README.md",
+    "pyproject.toml",
+    "uv.lock",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+[tool.ruff.lint]
+select = ["E", "F", "B", "UP", "SIM"]
+ignore = ["E501"]
+[tool.ruff.lint.pydocstyle]
+convention = "google"
