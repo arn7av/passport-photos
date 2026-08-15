@@ -387,19 +387,23 @@ def resolve_birefnet_model(
     if cli_value:
         values.append(Path(cli_value).expanduser())
     else:
+        configured = False
         for key in ("birefnet_model", "birefnet-model", "birefnetModel"):
             if key in config:
-                values.append(Path(str(config[key])).expanduser())
+                configured = True
+                configured_value = str(config[key]).strip()
+                if configured_value:
+                    values.append(Path(configured_value).expanduser())
                 break
-        values.extend(
-            [
-                MODEL_CACHE_DIR / "birefnet" / "BiRefNet_dynamic",
-                MODEL_CACHE_DIR / "BiRefNet_dynamic",
-                Path.cwd() / "BiRefNet_dynamic",
-                Path(__file__).parent / "BiRefNet_dynamic",
-                Path.home() / ".cache" / "passport-photos" / "BiRefNet_dynamic",
-            ]
-        )
+        if not configured:
+            values.extend(
+                [
+                    MODEL_CACHE_DIR / "birefnet" / "BiRefNet_dynamic",
+                    MODEL_CACHE_DIR / "BiRefNet_dynamic",
+                    Path(__file__).parent / "BiRefNet_dynamic",
+                    Path.home() / ".cache" / "passport-photos" / "BiRefNet_dynamic",
+                ]
+            )
     for candidate in values:
         model_dir = candidate.parent if candidate.is_file() else candidate
         if _valid_birefnet_model_dir(model_dir):
@@ -824,10 +828,14 @@ def _install_mtcnn_weight_loader_workaround() -> None:
         return
 
     def load_weights(weights_name: str):
-        candidates = [
-            Path(weights_name).resolve(),
-            resources.files("mtcnn.assets.weights") / weights_name,
-        ]
+        raw_name = os.fspath(weights_name)
+        requested_path = Path(raw_name).expanduser()
+        if requested_path.is_absolute() or os.path.dirname(raw_name):
+            candidates = [requested_path.resolve()]
+        else:
+            # MTCNN's defaults are bare names such as pnet.lz4. Resolve those only
+            # from the package so an unrelated working-directory pickle cannot win.
+            candidates = [resources.files("mtcnn.assets.weights") / raw_name]
         for candidate in candidates:
             if not candidate.is_file():
                 continue

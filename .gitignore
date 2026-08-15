@@ -13,7 +13,7 @@ Humans/
 *.pth
 *.onnx
 out/
-bench_out/
+bench_out*/
 .cache/
 .uv-cache/
 .ruff_cache/
